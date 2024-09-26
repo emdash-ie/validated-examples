@@ -1,7 +1,7 @@
-import cats.Applicative
 import cats.data.Validated._
 import cats.data.ValidatedNec
 import cats.effect.{IO, IOApp}
+import cats.syntax.apply._
 import cats.syntax.either._
 import cats.syntax.traverse._
 import cats.syntax.validated._
@@ -31,19 +31,21 @@ object Main extends IOApp.Simple {
   } yield {
     responseLines match {
       case Seq(name, email, number) =>
-        Applicative[[A] =>> ValidatedNec[UserError, A]].map3(
+        (
           validateName(name),
           validateEmail(email),
-          validateNumber(number),
-        )(UserData.apply)
+          validateNumber(number)
+        ).mapN(UserData.apply)
     }
   }
 
-  def validateName(name: String): ValidatedNec[UserError, String] = name.validNec
+  def validateName(name: String): ValidatedNec[UserError, String]
+    = name.validNec // no falsehoods here
 
-  def validateEmail(email: String): ValidatedNec[UserError, UserEmail] = email.split('@') match {
-    case Array(user, host) => UserEmail(user, host).validNec
-    case _ => InvalidEmail(email).invalidNec
+  def validateEmail(email: String): ValidatedNec[UserError, UserEmail] =
+    email.split('@') match {
+      case Array(user, host) => UserEmail(user, host).validNec
+      case _ => InvalidEmail(email).invalidNec
   }
 
   def validateNumber(number: String): ValidatedNec[UserError, Int] = (for {
