@@ -6,6 +6,14 @@ import cats.syntax.either._
 import cats.syntax.traverse._
 import cats.syntax.validated._
 
+case class UserData(name: String, emailAddress: UserEmail, favouriteNumber: Int)
+case class UserEmail(user: String, host: String)
+
+sealed trait UserError
+case class NotANumber(n: String) extends UserError
+case class DisallowedNumber(n: Int) extends UserError
+case class InvalidEmail(email: String) extends UserError
+
 object Main extends IOApp.Simple {
   val run = for {
     userData <- getDetails()
@@ -17,14 +25,6 @@ object Main extends IOApp.Simple {
       } yield ()
     }
   } yield ()
-
-  case class UserData(name: String, emailAddress: UserEmail, favouriteNumber: Int)
-  case class UserEmail(user: String, host: String)
-
-  sealed trait UserError
-  case class NotANumber(n: String) extends UserError
-  case class DisallowedNumber(n: Int) extends UserError
-  case class InvalidEmail(email: String) extends UserError
 
   def getDetails(): IO[ValidatedNec[UserError, UserData]] = for {
     responseLines <- prompt("Enter your name, email address, and favourite number on separate lines:\n\n", 3)
