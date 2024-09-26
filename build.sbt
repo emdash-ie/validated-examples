@@ -18,5 +18,4 @@ lazy val root = project
       "-Wimplausible-patterns",
       "-unchecked"
     ),
-    Compile / run / fork := true,
   )
