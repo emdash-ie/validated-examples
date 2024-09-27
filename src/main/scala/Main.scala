@@ -1,11 +1,11 @@
-import cats.{Applicative, Parallel}
 import cats.data.Validated._
 import cats.data.ValidatedNec
 import cats.effect.{IO, IOApp}
-import cats.effect.instances._
+import cats.syntax.apply._
 import cats.syntax.either._
 import cats.syntax.traverse._
 import cats.syntax.validated._
+import cats.syntax.parallel._
 import scala.concurrent.duration._
 
 case class UserData(name: String, emailAddress: UserEmail, favouriteNumber: Int)
@@ -32,13 +32,11 @@ object Main extends IOApp.Simple {
     responseLines <- prompt("Enter your name, email address, and favourite number on separate lines:\n\n", 3)
     result <- responseLines match {
       case Seq(name, email, number) =>
-        Applicative[IO]
-          .compose[[A] =>> ValidatedNec[UserError, A]]
-          .map3(
+        (
           validateName(name),
           validateEmail(email),
           IO.pure(validateNumber(number))
-        )(UserData.apply)
+        ).parMapN((a, b, c) => (a, b, c).mapN(UserData.apply))
     }
   } yield { result}
 
@@ -46,11 +44,13 @@ object Main extends IOApp.Simple {
     = for {
       _ <- IO.println(s"Validating name ${name}, will take 5 seconds…")
       _ <- IO.sleep(5.second)
+      _ <- IO.println(s"Done validating name ${name}!")
     } yield name.validNec // no falsehoods here
 
   def validateEmail(email: String): IO[ValidatedNec[UserError, UserEmail]] = for {
       _ <- IO.println(s"Validating email ${email}, will take 3 seconds…")
       _ <- IO.sleep(3.second)
+      _ <- IO.println(s"Done validating email ${email}!")
   } yield email.split('@') match {
       case Array(user, host) => UserEmail(user, host).validNec
       case _ => InvalidEmail(email).invalidNec
